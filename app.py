@@ -12,7 +12,6 @@ from transformers import (
 )
 from huggingface_hub import login
 
-# ---------- تنظیمات ----------
 MODEL_NAME = "HooshvareLab/gpt2-fa"
 SAVE_DIR = Path("persian_gpt2_personal")
 BUFFER_FILE = Path("persian_buffer.txt")
@@ -26,7 +25,6 @@ LR = 5e-5
 MAX_LENGTH = 128
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# ---------- کمک‌فانکشن: scraping اختصاصی برای انجمن JumpLander ----------
 def fetch_forum_index_text(url):
     """این تابع به طور خاص برای استخراج عناوین و توضیحات از صفحه اصلی انجمن JumpLander طراحی شده است."""
     try:
@@ -40,19 +38,15 @@ def fetch_forum_index_text(url):
     soup = BeautifulSoup(resp.text, "html.parser")
     texts = []
 
-    # حذف تگ‌های غیرضروری
     for tag in soup(["script", "style", "noscript", "svg", "img"]):
         tag.decompose()
 
-    # استخراج عناوین اصلی بخش‌ها و لینک‌های انجمن‌ها
     forum_blocks = soup.find_all("div", class_="forabg")
     for block in forum_blocks:
-        # استخراج عنوان دسته (Category)
         category_title_tag = block.find("span", class_="corners-top")
         if category_title_tag and category_title_tag.span:
              texts.append(f"## دسته: {category_title_tag.span.get_text(strip=True)}")
 
-        # استخراج هر انجمن (Forum) در دسته
         forum_rows = block.find_all("li", class_="row")
         for row in forum_rows:
             title_tag = row.find("a", class_="forumtitle")
@@ -83,7 +77,6 @@ def build_seed_from_forum():
     SEED_FILE.write_text(full_text, encoding="utf-8")
     print(f"[INFO] Seed file written: {SEED_FILE} ({len(full_text)} chars)")
 
-# ---------- اطمینان از فایل‌ها ----------
 def ensure_files():
     SAVE_DIR.mkdir(exist_ok=True)
     if not BUFFER_FILE.exists():
@@ -91,7 +84,6 @@ def ensure_files():
     if not SEED_FILE.exists():
         build_seed_from_forum()
 
-# ---------- بارگذاری مدل و توکنایزر ----------
 def load_model_and_tokenizer(model_dir=None):
     if model_dir and Path(model_dir).exists() and any(Path(model_dir).iterdir()):
         print(f"[INFO] Loading fine-tuned model from local dir: {model_dir}")
@@ -107,7 +99,6 @@ def load_model_and_tokenizer(model_dir=None):
     model.to(device)
     return model, tokenizer
 
-# ---------- تولید پاسخ ----------
 def generate_reply(model, tokenizer, prompt, max_new_tokens=150):
     inputs = tokenizer(prompt, return_tensors="pt").to(device)
     out = model.generate(
@@ -123,7 +114,6 @@ def generate_reply(model, tokenizer, prompt, max_new_tokens=150):
     text = tokenizer.decode(out[0], skip_special_tokens=True)
     return text[len(prompt):].strip()
 
-# ---------- بافر و آماده‌سازی دیتاست ----------
 def append_to_buffer(prompt, response):
     line = f"###PROMPT###\n{prompt}\n###RESPONSE###\n{response}\n\n"
     with open(BUFFER_FILE, "a", encoding="utf-8") as f:
@@ -140,16 +130,13 @@ def prepare_combined_training_file(tmp="tmp_combined.txt"):
     Path(tmp).write_text(combined, encoding="utf-8")
     return tmp
 
-# ---------- فاین‌تیون ساده با Trainer ----------
 def fine_tune_on_file(model, tokenizer, file_path):
     text = Path(file_path).read_text(encoding="utf-8")
     
-    # برای جلوگیری از خطا در صورت خالی بودن فایل
     if not text.strip():
         print("[WARN] Training file is empty. Skipping fine-tuning.")
         return
 
-    # توکنایز کردن کل متن و ساخت دیتاست
     from torch.utils.data import Dataset
 
     class TextBlockDataset(Dataset):
@@ -191,7 +178,6 @@ def fine_tune_on_file(model, tokenizer, file_path):
     trainer.save_model(str(SAVE_DIR))
     tokenizer.save_pretrained(str(SAVE_DIR))
 
-# ---------- push به HuggingFace (اختیاری) ----------
 def push_to_hf(model_dir, repo_name, hf_token_env="HF_TOKEN"):
     token = os.environ.get(hf_token_env)
     if not token:
@@ -206,7 +192,6 @@ def push_to_hf(model_dir, repo_name, hf_token_env="HF_TOKEN"):
     tokenizer.push_to_hub(repo_name)
     print(f"[INFO] Pushed successfully. You can now use the model from '{repo_name}'")
 
-# ---------- حلقهٔ چت اصلی ----------
 def run_chat_loop():
     ensure_files()
     model, tokenizer = load_model_and_tokenizer(SAVE_DIR if SAVE_DIR.exists() and any(SAVE_DIR.iterdir()) else None)
@@ -243,12 +228,10 @@ def run_chat_loop():
                 tmp_file = prepare_combined_training_file()
                 
                 print("[INFO] Starting fine-tuning process (this may take a while)...")
-                # مدل ذخیره شده محلی را برای فاین‌تیون مجدد بارگذاری می‌کنیم
                 model, tokenizer = load_model_and_tokenizer(SAVE_DIR)
                 fine_tune_on_file(model, tokenizer, tmp_file)
                 
                 print("[INFO] Fine-tuning complete. Model has been updated.")
-                # پاک کردن بافر بعد از آموزش
                 BUFFER_FILE.write_text("", encoding="utf-8")
                 print("[INFO] Buffer has been cleared.")
     
