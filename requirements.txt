@@ -1,0 +1,7 @@
+torch
+transformers
+datasets
+accelerate>=0.20.1 # برای افزایش سرعت آموزش و استفاده از fp16
+beautifulsoup4
+requests
+huggingface_hub
