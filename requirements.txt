@@ -1,7 +1,7 @@
 torch
 transformers
-datasets
-accelerate>=0.20.1 
 beautifulsoup4
 requests
 huggingface_hub
+black
+pytest
