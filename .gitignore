@@ -1,0 +1,7 @@
+__pycache__/
+persian_gpt2_personal/
+*.pt
+.tmp*
+*.pth
+.env
+venv/
