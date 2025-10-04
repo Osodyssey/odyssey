@@ -1,6 +1,6 @@
 # Odyssey (Oodi) — Personalized Persian AI Assistant with Continual Fine-Tuning
 <p align="center">
-  <img src="https://www.neutrinoweb.com/images/oodi/oodi-llm.png" alt="Oodi Logo" width="200"/>
+  <img src="https://www.neutrinoweb.com/images/oodi/oodi-llm.png" alt="Oodi Logo" width="400"/>
 </p>
 <p align="center">
   <img src="https://img.shields.io/badge/Model-GPT--2_Fa-blue?style=for-the-badge&logo=huggingface" alt="Model Badge"/>
